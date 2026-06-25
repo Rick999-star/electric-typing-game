@@ -121,8 +121,17 @@
 </head>
 <body>
 
+<script>
+    window.onerror = function(msg, url, line) {
+        alert("【システムエラー検知】\n原因: " + msg + "\n行数: " + line);
+        return false;
+    };
+</script>
+
 <div id="start-overlay">
-    <button id="start-btn">システム起動（クリックして開始）</button>
+    <button id="start-btn" onclick="document.getElementById('start-overlay').style.display='none'; initAudio();">
+        システム起動（クリックして開始）
+    </button>
 </div>
 
 <div id="game-container">
@@ -184,7 +193,6 @@
 </div>
 
 <script>
-    // --- 統合辞書データ ---
     const levels = [
         { 
             name: "Lv.1 母音（あいうえお）", 
@@ -231,7 +239,7 @@
         { 
             name: "Lv.5 専門用語（総合テスト）", 
             words: [
-                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "でんりゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" }, 
+                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "яゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" }, 
                 { ja: "コンセント", romaji: "KONSENTO" }, { ja: "トランジスタ", romaji: "TORANJISUTA" }, { ja: "コンデンサ", romaji: "KONDENSA" }, 
                 { ja: "オシロスコープ", romaji: "OSIROSUKO-PU" }, { ja: "はんだごて", romaji: "HANDAGOTE" }, { ja: "ケーブル", romaji: "KE-BURU" }, 
                 { ja: "アース", romaji: "A-SU" }, { ja: "ダイオード", romaji: "DAIO-DO" }, { ja: "インバーター", romaji: "INBA-TA-" }, 
@@ -247,9 +255,7 @@
     try {
         const savedData = localStorage.getItem('typingCircuitRecords');
         if (savedData) personalRecords = JSON.parse(savedData);
-    } catch (e) {
-        console.warn("セーブ機能制限モード");
-    }
+    } catch (e) {}
 
     let startingLevelIndex = 0; let currentQuestionList = [];
     let currentWordIndex = 0; let currentRomaji = ""; let typedLength = 0; let watt = 0;
@@ -263,8 +269,94 @@
     const gameContainer = document.getElementById('game-container');
     const keyboardElement = document.getElementById('keyboard'); 
     const resultScreen = document.getElementById('result-screen');
-    const startOverlay = document.getElementById('start-overlay'); 
-    const startBtn = document.getElementById('start-btn');
+    const startOverlay = document.getElementById('start-overlay');
     const levelSelector = document.getElementById('level-selector');
 
-    function shuffleArray(array)
+    function shuffleArray(array) {
+        let curId = array.length;
+        while (0 !== curId) {
+            let randId = Math.floor(Math.random() * curId);
+            curId -= 1;
+            let tmp = array[curId]; array[curId] = array[randId]; array[randId] = tmp;
+        }
+        return array;
+    }
+
+    function updateRecordDisplay() {
+        let key = 'lv' + startingLevelIndex;
+        if (personalRecords[key]) {
+            let t = personalRecords[key].time;
+            document.getElementById('disp-best-time').innerText = (t !== Infinity) ? `${Math.floor(t/60)}分${t%60}秒` : "--";
+            document.getElementById('disp-best-score').innerText = personalRecords[key].score;
+        } else {
+            document.getElementById('disp-best-time').innerText = "--";
+            document.getElementById('disp-best-score').innerText = "--";
+        }
+    }
+
+    document.querySelectorAll('.lv-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (isPlaying) return;
+            document.querySelectorAll('.lv-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            startingLevelIndex = parseInt(e.target.dataset.lv);
+            levelElement.innerText = "待機中: " + levels[startingLevelIndex].name;
+            try { updateRecordDisplay(); } catch(err){}
+            playSound('clear');
+        });
+    });
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        try {
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            
+            if (type === 'zap') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'error') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.linearRampToValueAtTime(0, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'clear') {
+                osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
+                gain.gain.setValueAtTime(0.15, now); gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'levelUp') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1); 
+                osc.frequency.setValueAtTime(783.99, now + 0.2); osc.frequency.setValueAtTime(1046.50, now + 0.3); 
+                gain.gain.setValueAtTime(0.1, now); gain.gain.linearRampToValueAtTime(0, now + 0.6);
+                osc.start(now); osc.stop(now + 0.6);
+            }
+        } catch(e){}
+    }
+
+    // htmlのonclickから呼び出される音声初期化処理
+    function initAudio() {
+        try { updateRecordDisplay(); } catch(e){}
+        try { levelElement.innerText = "待機中: " + levels[startingLevelIndex].name; } catch(e){}
+        try { 
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if(AudioCtx) {
+                audioCtx = new AudioCtx(); if (audioCtx.state === 'suspended') audioCtx.resume();
+                playSound('clear'); 
+            }
+        } catch(e) {}
+    }
+
+    function triggerErrorVisuals() {
+        playSound('error');
+        gameContainer.classList.remove('shake'); void gameContainer.offsetWidth; 
+        gameContainer.classList.add('shake', 'error-border');
+        document.body.style.backgroundColor = '#3a1a1a'; 
+        setTimeout(() => {
+            gameContainer.classList.remove('shake', 'error-border'); document.body.style.backgroundColor = '#1e1e2f'; 
+        }, 300);
+    }
+
+    function highlightNextKey() {
+        document.querySelectorAll('.key').
