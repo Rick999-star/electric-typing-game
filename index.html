@@ -2,32 +2,32 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>動作テスト</title>
+    <title>タイピング・サーキット</title>
+    <style>
+        body { background-color: #1e1e2f; color: #fff; text-align: center; font-family: sans-serif; padding: 30px; margin: 0; }
+        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e1e2f; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        #start-btn { background: #00ffcc; color: #1e1e2f; font-size: 1.5em; padding: 20px 40px; border: none; border-radius: 10px; cursor: pointer; }
+        #game-container { background: #2a2a40; padding: 30px; border-radius: 15px; max-width: 700px; margin: 0 auto; }
+        .japanese { font-size: 2em; margin: 20px 0; color: #a9b7c6; }
+        .romaji { font-size: 3em; font-weight: bold; color: #00ffcc; margin-bottom: 20px; }
+    </style>
 </head>
-<body style="background:#1e1e2f; color:#fff; text-align:center; padding:50px;">
-
-    <div id="start-screen">
-        <button id="test-btn" style="padding:20px; font-size:2em; cursor:pointer;">
-            【起動テスト】ここをクリック
-        </button>
+<body>
+    <div id="start-overlay"><button id="start-btn">システム起動（クリック）</button></div>
+    <div id="game-container">
+        <h1>⚡ タイピング・サーキット ⚡</h1>
+        <div class="japanese" id="japanese-text">準備完了</div>
+        <div class="romaji" id="romaji-text">ENTERで開始</div>
     </div>
-
-    <div id="game-screen" style="display:none;">
-        <h1 id="text-display" style="font-size:3em; color:#00ffcc;">成功！ここが表示されました</h1>
-        <p>キーボードを入力してみてください</p>
-    </div>
-
     <script>
-        document.getElementById('test-btn').addEventListener('click', function() {
-            // 強制的に画面を切り替える
-            document.getElementById('start-screen').style.display = 'none';
-            document.getElementById('game-screen').style.display = 'block';
-            console.log("起動成功");
+        document.getElementById('start-btn').addEventListener('click', () => {
+            document.getElementById('start-overlay').style.display = 'none';
         });
-
-        // 入力テスト
-        document.addEventListener('keydown', function(e) {
-            document.getElementById('text-display').innerText = "入力キー: " + e.key;
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                document.getElementById('japanese-text').innerText = "動作確認完了！ここからゲームが始まります。";
+                document.getElementById('romaji-text').innerText = "READY";
+            }
         });
     </script>
 </body>
