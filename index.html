@@ -1,58 +1,73 @@
-// --- 「ん」を「NN」に統一した辞書データ ---
-const levels = [
-    { 
-        name: "Lv.1 母音（あいうえお）", 
-        words: [
-            { ja: "あお (青)", romaji: "AO" }, { ja: "いい (良い)", romaji: "II" }, { ja: "うえ (上)", romaji: "UE" },
-            { ja: "えい (エイ)", romaji: "EI" }, { ja: "おい (甥)", romaji: "OI" }, { ja: "あい (愛)", romaji: "AI" },
-            { ja: "いう (言う)", romaji: "IU" }, { ja: "あう (会う)", romaji: "AU" }, { ja: "いえ (家)", romaji: "IE" },
-            { ja: "おおい (多い)", romaji: "OOI" }
-        ] 
-    },
-    { 
-        name: "Lv.2 基本の子音（清音のみ）", 
-        words: [
-            { ja: "かいろ (回路)", romaji: "KAIRO" }, { ja: "きかい (機械)", romaji: "KIKAI" }, { ja: "てこ (梃子)", romaji: "TEKO" },
-            { ja: "はこ (箱)", romaji: "HAKO" }, { ja: "さす (刺す)", romaji: "SASU" }, { ja: "まと (的)", romaji: "MATO" },
-            { ja: "くみ (組)", romaji: "KUMI" }, { ja: "ぬの (布)", romaji: "NUNO" }, { ja: "ほし (星)", romaji: "HOSI" },
-            { ja: "ゆき (雪)", romaji: "YUKI" }, { ja: "にく (肉)", romaji: "NIKU" }, { ja: "こと (事)", romaji: "KOTO" },
-            { ja: "いと (糸)", romaji: "ITO" }
-        ] 
-    },
-    { 
-        name: "Lv.3 濁音・半濁音（点々・丸）", 
-        words: [
-            { ja: "でんき (電気)", romaji: "DENNKI" }, { ja: "どう (銅)", romaji: "DOU" }, { ja: "ばね (発条)", romaji: "BANE" },
-            { ja: "ぶひん (部品)", romaji: "BUHINN" }, { ja: "ボタン", romaji: "BOTANN" }, { ja: "パソコン", romaji: "PASOKONN" },
-            { ja: "じしゃく (磁石)", romaji: "JISYAKU" }, { ja: "ぎん (銀)", romaji: "GINN" }, { ja: "ぜんまい", romaji: "ZENMAI" },
-            { ja: "でんたく (電卓)", romaji: "DENNTAKU" }, { ja: "まど (窓)", romaji: "MADO" }, { ja: "でんわ (電話)", romaji: "DENNWA" },
-            { ja: "じかん (時間)", romaji: "ZIKANN" }, { ja: "びじゅつ (美術)", romaji: "BIZYUTU" }, { ja: "だくおん (濁音)", romaji: "DAKUONN" },
-            { ja: "じどう (自動)", romaji: "ZIDOU" }
-        ] 
-    },
-    { 
-        name: "Lv.4 促音・長音（小さい文字・伸ばし棒）", 
-        words: [
-            { ja: "ワット", romaji: "WATTO" }, { ja: "ニッパー", romaji: "NIPPA-" }, { ja: "スイッチ", romaji: "SUITTI" },
-            { ja: "ショート", romaji: "SYO-TO" }, { ja: "ヒューズ", romaji: "HYU-ZU" }, { ja: "ソケット", romaji: "SOKETTO" },
-            { ja: "オーム", romaji: "O-MU" }, { ja: "ジャック", romaji: "JAKKU" }, { ja: "ブレーカー", romaji: "BURE-KA-" },
-            { ja: "テスター", romaji: "TESUTA-" }, { ja: "バッテリー", romaji: "BATTERI-" }, { ja: "モーター", romaji: "MO-TA-" },
-            { ja: "ローター", romaji: "RO-TA-" }, { ja: "リレー", romaji: "RIRE-" }, { ja: "センサー", romaji: "SENSA-" },
-            { ja: "ペーパー", romaji: "PE-PA-" }, { ja: "パーツ", romaji: "PA-TU" }, { ja: "ルーター", romaji: "RU-TA-" },
-            { ja: "スターター", romaji: "SUTA-TA-" }
-        ] 
-    },
-    { 
-        name: "Lv.5 専門用語（総合テスト）", 
-        words: [
-            { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "でんりゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" },
-            { ja: "コンセント", romaji: "KONSENTO" }, { ja: "トランジスタ", romaji: "TORANJISUTA" }, { ja: "コンデンサ", romaji: "KONDENSA" },
-            { ja: "オシロスコープ", romaji: "OSIROSUKO-PU" }, { ja: "はんだごて", romaji: "HANDAGOTE" }, { ja: "ケーブル", romaji: "KE-BURU" },
-            { ja: "アース", romaji: "A-SU" }, { ja: "ダイオード", romaji: "DAIO-DO" }, { ja: "インバーター", romaji: "INBA-TA-" },
-            { ja: "はいせん (配線)", romaji: "HAISENN" }, { ja: "ドリル", romaji: "DORIRU" }, { ja: "ドライバー", romaji: "DORAIBA-" },
-            { ja: "プラグ", romaji: "PURAGU" }, { ja: "マイクロホン", romaji: "MAIKUROHONN" }, { ja: "でんじべん (電磁弁)", romaji: "DENZIBENN" },
-            { ja: "かでんりゅう (過電流)", romaji: "KADENNRYUU" }, { ja: "ターミナル", romaji: "TA-MINARU" }, { ja: "しんどう (振動)", romaji: "SINNDOU" },
-            { ja: "テンション", romaji: "TENSYONN" }
-        ] 
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>タイピング・サーキット</title>
+    <style>
+        body { background-color: #1e1e2f; color: #fff; font-family: sans-serif; text-align: center; padding: 30px; margin: 0; }
+        #start-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1e1e2f; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; }
+        #start-btn { background: #00ffcc; color: #1e1e2f; font-size: 1.5em; padding: 20px 40px; border: none; border-radius: 10px; cursor: pointer; }
+        #game-container { background: #2a2a40; border: 2px solid #00ffcc; border-radius: 15px; padding: 30px; max-width: 700px; margin: 0 auto; }
+        .japanese { font-size: 2em; margin: 20px 0; color: #a9b7c6; }
+        .romaji { font-size: 3em; font-weight: bold; margin-bottom: 20px; color: #00ffcc; }
+        .lv-btn { background: #333; color: #fff; padding: 10px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 5px; }
+        .lv-btn.active { background: #ff8c00; }
+        .key-row { display: flex; justify-content: center; gap: 5px; margin-top: 10px; }
+        .key { background: #333; padding: 10px; border-radius: 5px; min-width: 30px; }
+        .key.active { background: #00ffcc; color: #000; }
+    </style>
+</head>
+<body>
+
+<div id="start-overlay">
+    <button id="start-btn">システム起動（ここをクリック）</button>
+</div>
+
+<div id="game-container">
+    <div id="level-display">Lv.1選択中</div>
+    <div id="level-selector">
+        <button class="lv-btn active" onclick="selectLevel(0, this)">Lv.1</button>
+        <button class="lv-btn" onclick="selectLevel(1, this)">Lv.2</button>
+        <button class="lv-btn" onclick="selectLevel(2, this)">Lv.3</button>
+        <button class="lv-btn" onclick="selectLevel(3, this)">Lv.4</button>
+        <button class="lv-btn" onclick="selectLevel(4, this)">Lv.5</button>
+    </div>
+    <div class="japanese" id="japanese-text">準備完了</div>
+    <div class="romaji" id="romaji-text">ENTERで開始</div>
+</div>
+
+<script>
+    // 単語辞書（すべてNNや入力効率の良い形式で統一済み）
+    const levels = [
+        { name: "Lv.1 母音", words: [{ja:"青", romaji:"AO"}, {ja:"愛", romaji:"AI"}] },
+        { name: "Lv.2 清音", words: [{ja:"回路", romaji:"KAIRO"}, {ja:"機械", romaji:"KIKAI"}] },
+        { name: "Lv.3 濁音", words: [{ja:"電気", romaji:"DENNKI"}, {ja:"部品", romaji:"BUHINN"}] },
+        { name: "Lv.4 促音・長音", words: [{ja:"ワット", romaji:"WATTO"}, {ja:"スイッチ", romaji:"SUITTI"}] },
+        { name: "Lv.5 専門用語", words: [{ja:"電圧", romaji:"DENNATU"}, {ja:"電流", romaji:"DENNRYUU"}] }
+    ];
+
+    let currentLevel = 0;
+    let audioCtx;
+
+    function selectLevel(lv, btn) {
+        currentLevel = lv;
+        document.querySelectorAll('.lv-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById('level-display').innerText = levels[lv].name + " 選択中";
     }
-];
+
+    document.getElementById('start-btn').addEventListener('click', function() {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        document.getElementById('start-overlay').style.display = 'none';
+        alert("起動しました！ENTERキーでゲームを開始してください。");
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            document.getElementById('japanese-text').innerText = "ゲーム開始！（Lv." + (currentLevel + 1) + "）";
+            document.getElementById('romaji-text').innerText = levels[currentLevel].words[0].romaji;
+        }
+    });
+</script>
+</body>
+</html>
