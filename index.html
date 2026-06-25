@@ -2,35 +2,416 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>タイピング・サーキット - 完全統合版</title>
+    <title>タイピング・サーキット</title>
     <style>
-        /* [ここに前回の完成版で作成したすべてのCSSを貼り付けてください] */
-        /* 文字数制限の関係で、一旦ここには最も重要な骨子とロジックを記載します */
-        body { background-color: #1e1e2f; color: #fff; text-align: center; font-family: sans-serif; }
-        #game-container { background: #2a2a40; padding: 30px; border-radius: 15px; max-width: 700px; margin: 20px auto; }
-        .lv-btn { background: #333; color: #fff; padding: 10px 20px; margin: 5px; cursor: pointer; border: none; border-radius: 5px; }
-        .lv-btn.active { background: #ff8c00; }
-        #romaji-text { font-size: 3em; font-weight: bold; color: #00ffcc; margin: 20px 0; }
-        .key { display: inline-block; background: #333; padding: 10px; margin: 2px; border-radius: 5px; min-width: 30px; }
-        .key.active { background: #00ffcc; color: #000; }
+        body {
+            background-color: #1e1e2f; color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            text-align: center; padding: 30px; transition: background-color 0.1s; margin: 0;
+        }
+        
+        #start-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(30, 30, 47, 0.95);
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            z-index: 1000;
+        }
+        #start-btn {
+            background: #00ffcc; color: #1e1e2f; font-size: 1.5em; font-weight: bold;
+            padding: 20px 40px; border: none; border-radius: 10px; cursor: pointer;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5); transition: transform 0.1s;
+        }
+        #start-btn:active { transform: scale(0.95); }
+
+        #game-container {
+            background: #2a2a40; border: 2px solid #00ffcc; border-radius: 15px;
+            padding: 30px; max-width: 700px; margin: 0 auto;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.3); position: relative;
+        }
+        
+        @keyframes shakeAnim {
+            0% { transform: translateX(0); }
+            20% { transform: translateX(-10px); }
+            40% { transform: translateX(10px); }
+            60% { transform: translateX(-10px); }
+            80% { transform: translateX(10px); }
+            100% { transform: translateX(0); }
+        }
+        .shake { animation: shakeAnim 0.3s; }
+        .error-border { border-color: #ff3333 !important; box-shadow: 0 0 30px rgba(255, 51, 51, 0.6) !important; }
+
+        #level-display {
+            background: #00ffcc; color: #1e1e2f; font-weight: bold; padding: 5px 15px;
+            border-radius: 20px; display: inline-block; margin-bottom: 15px; font-size: 1.2em;
+            transition: all 0.3s;
+        }
+
+        #record-display {
+            background: #111; border: 1px solid #444; border-radius: 8px;
+            padding: 10px; margin-bottom: 20px; font-size: 0.9em; color: #a9b7c6;
+            display: flex; justify-content: space-around;
+        }
+        .record-val { color: #ffcc00; font-weight: bold; font-size: 1.2em; }
+        
+        #level-selector {
+            display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;
+        }
+        .lv-btn {
+            background: #333; color: #fff; border: 2px solid #555;
+            padding: 10px 20px; border-radius: 8px; font-weight: bold; cursor: pointer;
+            transition: all 0.2s;
+        }
+        .lv-btn:hover { background: #444; }
+        .lv-btn.active {
+            background: #ff8c00; border-color: #ffcc00; box-shadow: 0 0 10px #ffcc00;
+        }
+
+        .japanese { font-size: 2em; margin-bottom: 10px; color: #a9b7c6; }
+        .romaji { font-size: 3em; letter-spacing: 5px; font-weight: bold; margin-bottom: 20px; height: 1.2em;}
+        .typed { color: #00ffcc; text-shadow: 0 0 10px #00ffcc; }
+        .untyped { color: #555; }
+        
+        #power-meter {
+            width: 100%; height: 20px; background: #111; border-radius: 10px;
+            margin: 20px 0; overflow: hidden; border: 1px solid #444;
+        }
+        #power-fill {
+            width: 0%; height: 100%; background: linear-gradient(90deg, #ff8c00, #ffcc00);
+            transition: width 0.1s; box-shadow: 0 0 10px #ffcc00;
+        }
+        #status { font-size: 1.2em; color: #ffcc00; margin-bottom: 20px; }
+
+        #keyboard {
+            display: flex; flex-direction: column; gap: 8px; margin-top: 30px;
+            background: #1a1a2e; padding: 20px; border-radius: 10px; border: 1px solid #333;
+        }
+        .key-row { display: flex; justify-content: center; gap: 8px; }
+        .key {
+            background: #333; color: #888; border: 2px solid #555; border-radius: 6px;
+            min-width: 40px; height: 45px; display: flex; align-items: center; justify-content: center;
+            font-weight: bold; font-size: 1.2em; transition: all 0.1s;
+        }
+        .key-wide { min-width: 90px; font-size: 1em; }
+        .key.active {
+            background: #004d40; color: #fff; border-color: #00ffcc;
+            box-shadow: 0 0 15px #00ffcc, inset 0 0 10px #00ffcc; transform: scale(1.1); z-index: 10;
+        }
+
+        #result-screen {
+            display: none; margin-top: 30px; background: #1a1a2e; padding: 30px;
+            border-radius: 10px; border: 1px solid #ffcc00; box-shadow: 0 0 20px rgba(255, 204, 0, 0.2);
+        }
+        .result-item { font-size: 1.5em; margin: 15px 0; position: relative; }
+        .result-rank { font-size: 4em; font-weight: bold; margin: 20px 0; text-shadow: 0 0 20px; }
+        .rank-S { color: #ffcc00; text-shadow: 0 0 20px #ffcc00; }
+        .rank-A { color: #00ffcc; text-shadow: 0 0 20px #00ffcc; }
+        .rank-B { color: #88ccff; }
+        .rank-C { color: #ff8888; }
+        
+        .new-record-badge {
+            display: none; color: #fff; background: #ff3366; font-size: 0.6em;
+            padding: 3px 10px; border-radius: 15px; margin-left: 15px;
+            vertical-align: middle; font-weight: bold;
+            animation: bounce 0.5s infinite alternate; box-shadow: 0 0 10px #ff3366;
+        }
+        @keyframes bounce { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+        .restart-msg { font-size: 1em; color: #888; margin-top: 20px; animation: blink 1.5s infinite; }
+        @keyframes blink { 50% { opacity: 0.5; } }
     </style>
 </head>
 <body>
-    <div id="start-overlay"><button id="start-btn">システム起動（クリック）</button></div>
-    <div id="game-container">
-        <div id="level-selector">
-            <button class="lv-btn active" onclick="setLv(0, this)">Lv.1</button>
-            <button class="lv-btn" onclick="setLv(1, this)">Lv.2</button>
-            <button class="lv-btn" onclick="setLv(2, this)">Lv.3</button>
-            <button class="lv-btn" onclick="setLv(3, this)">Lv.4</button>
-            <button class="lv-btn" onclick="setLv(4, this)">Lv.5</button>
-        </div>
-        <div id="japanese-text">準備完了</div>
-        <div id="romaji-text">---</div>
+
+<div id="start-overlay">
+    <button id="start-btn">システム起動（クリックして開始）</button>
+</div>
+
+<div id="game-container">
+    <div id="level-display">待機中: Lv.1 母音（あいうえお）</div>
+    <h2>⚡ タイピング・サーキット ⚡</h2>
+
+    <div id="record-display">
+        <div>最速タイム: <span class="record-val" id="disp-best-time">--</span></div>
+        <div>最高出力(スコア): <span class="record-val" id="disp-best-score">--</span> W</div>
     </div>
-    <script>
-        // 辞書データ、ゲームロジック、ランキング保存機能の全てをここに記述します
-        // ※このコードの後に、前々回の「ランキング機能」付きのスクリプトをすべて戻して統合すれば完成です。
-    </script>
-</body>
-</html>
+
+    <div id="status">現在の出力: <span id="watt">0</span> W</div>
+    <div id="power-meter"><div id="power-fill"></div></div>
+    
+    <div class="japanese" id="japanese-text">メインシステム起動準備</div>
+    
+    <div id="level-selector">
+        <button class="lv-btn active" data-lv="0">Lv.1</button>
+        <button class="lv-btn" data-lv="1">Lv.2</button>
+        <button class="lv-btn" data-lv="2">Lv.3</button>
+        <button class="lv-btn" data-lv="3">Lv.4</button>
+        <button class="lv-btn" data-lv="4">Lv.5</button>
+    </div>
+
+    <div class="romaji" id="romaji-text">
+        <span class="untyped">ENTERキーで開始</span>
+    </div>
+
+    <div id="keyboard">
+        <div class="key-row">
+            <div class="key" id="key-Q">Q</div><div class="key" id="key-W">W</div><div class="key" id="key-E">E</div><div class="key" id="key-R">R</div><div class="key" id="key-T">T</div><div class="key" id="key-Y">Y</div><div class="key" id="key-U">U</div><div class="key" id="key-I">I</div><div class="key" id="key-O">O</div><div class="key" id="key-P">P</div><div class="key" id="key--">-</div>
+        </div>
+        <div class="key-row">
+            <div class="key" id="key-A">A</div><div class="key" id="key-S">S</div><div class="key" id="key-D">D</div><div class="key" id="key-F">F</div><div class="key" id="key-G">G</div><div class="key" id="key-H">H</div><div class="key" id="key-J">J</div><div class="key" id="key-K">K</div><div class="key" id="key-L">L</div>
+        </div>
+        <div class="key-row">
+            <div class="key" id="key-Z">Z</div><div class="key" id="key-X">X</div><div class="key" id="key-C">C</div><div class="key" id="key-V">V</div><div class="key" id="key-B">B</div><div class="key" id="key-N">N</div><div class="key" id="key-M">M</div>
+        </div>
+        <div class="key-row">
+            <div class="key key-wide" id="key-ENTER">ENTER</div>
+        </div>
+    </div>
+
+    <div id="result-screen">
+        <h3>⚡ 業務完了レポート ⚡</h3>
+        <div class="result-item">
+            稼働時間: <span id="res-time" style="color: #00ffcc;">0秒</span>
+            <span id="badge-time" class="new-record-badge">NEW RECORD!</span>
+        </div>
+        <div class="result-item">
+            最終出力: <span id="res-watt" style="color: #ffcc00;">0 W</span>
+            <span id="badge-score" class="new-record-badge">NEW RECORD!</span>
+        </div>
+        <div class="result-item">漏電回数（ミス入力）: <span id="res-miss" style="color: #ff3333;">0回</span></div>
+        <div class="result-item">最終評価ランク</div>
+        <div class="result-rank" id="res-rank">A</div>
+        <div class="restart-msg">ENTERキーで待機画面へ</div>
+    </div>
+</div>
+
+<script>
+    // --- 「ん」を「NN」に統一し、効率的入力に対応した最新辞書 ---
+    const levels = [
+        { 
+            name: "Lv.1 母音（あいうえお）", 
+            words: [
+                { ja: "あお (青)", romaji: "AO" }, { ja: "いい (良い)", romaji: "II" }, { ja: "うえ (上)", romaji: "UE" },
+                { ja: "えい (エイ)", romaji: "EI" }, { ja: "おい (甥)", romaji: "OI" }, { ja: "あい (愛)", romaji: "AI" },
+                { ja: "いう (言う)", romaji: "IU" }, { ja: "あう (会う)", romaji: "AU" }, { ja: "いえ (家)", romaji: "IE" },
+                { ja: "おおい (多い)", romaji: "OOI" }
+            ] 
+        },
+        { 
+            name: "Lv.2 基本の子音（清音のみ）", 
+            words: [
+                { ja: "かいろ (回路)", romaji: "KAIRO" }, { ja: "きかい (機械)", romaji: "KIKAI" }, { ja: "てこ (梃子)", romaji: "TEKO" },
+                { ja: "はこ (箱)", romaji: "HAKO" }, { ja: "さす (刺す)", romaji: "SASU" }, { ja: "まと (的)", romaji: "MATO" },
+                { ja: "くみ (組)", romaji: "KUMI" }, { ja: "ぬの (布)", romaji: "NUNO" }, { ja: "ほし (星)", romaji: "HOSI" },
+                { ja: "ゆき (雪)", romaji: "YUKI" }, { ja: "にく (肉)", romaji: "NIKU" }, { ja: "こと (事)", romaji: "KOTO" },
+                { ja: "いと (糸)", romaji: "ITO" }
+            ] 
+        },
+        { 
+            name: "Lv.3 濁音・半濁音（点々・丸）", 
+            words: [
+                { ja: "でんき (電気)", romaji: "DENNKI" }, { ja: "どう (銅)", romaji: "DOU" }, { ja: "ばね (発条)", romaji: "BANE" },
+                { ja: "ぶひん (部品)", romaji: "BUHINN" }, { ja: "ボタン", romaji: "BOTANN" }, { ja: "パソコン", romaji: "PASOKONN" },
+                { ja: "じしゃく (磁石)", romaji: "JISYAKU" }, { ja: "ぎん (銀)", romaji: "GINN" }, { ja: "ぜんまい", romaji: "ZENMAI" },
+                { ja: "でんたく (電卓)", romaji: "DENNTAKU" }, { ja: "まど (窓)", romaji: "MADO" }, { ja: "でんわ (電話)", romaji: "DENNWA" },
+                { ja: "じかん (時間)", romaji: "ZIKANN" }, { ja: "びじゅつ (美術)", romaji: "BIZYUTU" }, { ja: "だくおん (濁音)", romaji: "DAKUONN" },
+                { ja: "じどう (自動)", romaji: "ZIDOU" }
+        ] 
+        },
+        { 
+            name: "Lv.4 促音・長音（小さい文字・伸ばし棒）", 
+            words: [
+                { ja: "ワット", romaji: "WATTO" }, { ja: "ニッパー", romaji: "NIPPA-" }, { ja: "スイッチ", romaji: "SUITTI" },
+                { ja: "ショート", romaji: "SYO-TO" }, { ja: "ヒューズ", romaji: "HYU-ZU" }, { ja: "ソケット", romaji: "SOKETTO" },
+                { ja: "オーム", romaji: "O-MU" }, { ja: "ジャック", romaji: "JAKKU" }, { ja: "ブレーカー", romaji: "BURE-KA-" },
+                { ja: "テスター", romaji: "TESUTA-" }, { ja: "バッテリー", romaji: "BATTERI-" }, { ja: "モーター", romaji: "MO-TA-" },
+                { ja: "ローター", romaji: "RO-TA-" }, { ja: "リレー", romaji: "RIRE-" }, { ja: "センサー", romaji: "SENSA-" },
+                { ja: "ペーパー", romaji: "PE-PA-" }, { ja: "パーツ", romaji: "PA-TU" }, { ja: "ルーター", romaji: "RU-TA-" },
+                { ja: "スターター", romaji: "SUTA-TA-" }
+            ] 
+        },
+        { 
+            name: "Lv.5 専門用語（総合テスト）", 
+            words: [
+                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "でんりゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" },
+                { ja: "コンセント", romaji: "KONSENTO" }, { ja: "トランジスタ", romaji: "TORANJISUTA" }, { ja: "コンデンサ", romaji: "KONDENSA" },
+                { ja: "オシロスコープ", romaji: "OSIROSUKO-PU" }, { ja: "はんだごて", romaji: "HANDAGOTE" }, { ja: "ケーブル", romaji: "KE-BURU" },
+                { ja: "アース", romaji: "A-SU" }, { ja: "ダイオード", romaji: "DAIO-DO" }, { ja: "インバーター", romaji: "INBA-TA-" },
+                { ja: "はいせん (配線)", romaji: "HAISENN" }, { ja: "ドリル", romaji: "DORIRU" }, { ja: "ドライバー", romaji: "DORAIBA-" },
+                { ja: "プラグ", romaji: "PURAGU" }, { ja: "マイクロホン", romaji: "MAIKUROHONN" }, { ja: "でんじべん (電磁弁)", romaji: "DENZIBENN" },
+                { ja: "かでんりゅう (過電流)", romaji: "KADENNRYUU" }, { ja: "ターミナル", romaji: "TA-MINARU" }, { ja: "しんどう (振動)", romaji: "SINNDOU" },
+                { ja: "テンション", romaji: "TENSYONN" }
+            ] 
+        }
+    ];
+
+    let personalRecords = JSON.parse(localStorage.getItem('typingCircuitRecords')) || {};
+
+    let startingLevelIndex = 0; 
+    let currentQuestionList = []; 
+    
+    let currentWordIndex = 0; 
+    let currentRomaji = ""; 
+    let typedLength = 0; 
+    let watt = 0;
+    let isPlaying = false; 
+    let audioCtx; 
+    let startTime = 0; 
+    let missCount = 0;
+
+    const levelElement = document.getElementById('level-display'); 
+    const japaneseElement = document.getElementById('japanese-text');
+    const romajiElement = document.getElementById('romaji-text'); 
+    const wattElement = document.getElementById('watt');
+    const powerFillElement = document.getElementById('power-fill'); 
+    const gameContainer = document.getElementById('game-container');
+    const keyboardElement = document.getElementById('keyboard'); 
+    const resultScreen = document.getElementById('result-screen');
+    const startOverlay = document.getElementById('start-overlay'); 
+    const startBtn = document.getElementById('start-btn');
+    const levelSelector = document.getElementById('level-selector');
+
+    function shuffleArray(array) {
+        let curId = array.length;
+        while (0 !== curId) {
+            let randId = Math.floor(Math.random() * curId);
+            curId -= 1;
+            let tmp = array[curId];
+            array[curId] = array[randId];
+            array[randId] = tmp;
+        }
+        return array;
+    }
+
+    function updateRecordDisplay() {
+        let key = 'lv' + startingLevelIndex;
+        if (personalRecords[key]) {
+            let t = personalRecords[key].time;
+            document.getElementById('disp-best-time').innerText = (t !== Infinity) ? `${Math.floor(t/60)}分${t%60}秒` : "--";
+            document.getElementById('disp-best-score').innerText = personalRecords[key].score;
+        } else {
+            document.getElementById('disp-best-time').innerText = "--";
+            document.getElementById('disp-best-score').innerText = "--";
+        }
+    }
+
+    document.querySelectorAll('.lv-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            if (isPlaying) return;
+            document.querySelectorAll('.lv-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            startingLevelIndex = parseInt(e.target.dataset.lv);
+            levelElement.innerText = "待機中: " + levels[startingLevelIndex].name;
+            updateRecordDisplay(); 
+            playSound('clear');
+        });
+    });
+
+    function playSound(type) {
+        if (!audioCtx) return;
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        
+        if (type === 'zap') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(800, now + 0.1);
+            gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+            osc.start(now); osc.stop(now + 0.1);
+        } else if (type === 'error') {
+            osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+            gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+            osc.start(now); osc.stop(now + 0.15);
+        } else if (type === 'clear') {
+            osc.type = 'sine'; osc.frequency.setValueAtTime(880, now);
+            gain.gain.setValueAtTime(0.15, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc.start(now); osc.stop(now + 0.3);
+        } else if (type === 'levelUp') {
+            osc.type = 'square'; osc.frequency.setValueAtTime(523.25, now); osc.frequency.setValueAtTime(659.25, now + 0.1); 
+            osc.frequency.setValueAtTime(783.99, now + 0.2); osc.frequency.setValueAtTime(1046.50, now + 0.3); 
+            gain.gain.setValueAtTime(0.1, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+            osc.start(now); osc.stop(now + 0.6);
+        }
+    }
+
+    startBtn.addEventListener('click', () => {
+        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); playSound('clear'); } 
+        catch(e) { console.warn("Audio Context Error", e); }
+        startOverlay.style.display = 'none';
+        updateRecordDisplay(); 
+        levelElement.innerText = "待機中: " + levels[startingLevelIndex].name;
+    });
+
+    function triggerErrorVisuals() {
+        playSound('error');
+        gameContainer.classList.remove('shake'); void gameContainer.offsetWidth; 
+        gameContainer.classList.add('shake', 'error-border');
+        document.body.style.backgroundColor = '#3a1a1a'; 
+        setTimeout(() => {
+            gameContainer.classList.remove('shake', 'error-border');
+            document.body.style.backgroundColor = '#1e1e2f'; 
+        }, 300);
+    }
+
+    function highlightNextKey() {
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        if (!isPlaying) { document.getElementById('key-ENTER').classList.add('active'); return; }
+        if (typedLength < currentRomaji.length) {
+            const nextChar = currentRomaji[typedLength];
+            const targetKey = document.getElementById('key-' + nextChar);
+            if (targetKey) targetKey.classList.add('active');
+        }
+    }
+
+    function loadWord() {
+        levelElement.innerText = `[${levels[startingLevelIndex].name}] 進行状況: ${currentWordIndex + 1} / ${currentQuestionList.length}`;
+        currentRomaji = currentQuestionList[currentWordIndex].romaji;
+        japaneseElement.innerText = currentQuestionList[currentWordIndex].ja;
+        typedLength = 0; updateDisplay(); highlightNextKey();
+    }
+
+    function nextWord() {
+        currentWordIndex++;
+        if (currentWordIndex >= currentQuestionList.length) {
+            gameClear(); 
+            return; 
+        }
+        playSound('clear'); 
+        loadWord();
+    }
+
+    function gameClear() {
+        isPlaying = false;
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        
+        const timeDiff = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(timeDiff / 60); const seconds = timeDiff % 60;
+        const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
+
+        let key = 'lv' + startingLevelIndex;
+        if (!personalRecords[key]) personalRecords[key] = { time: Infinity, score: 0 };
+        
+        let isNewTime = timeDiff < personalRecords[key].time;
+        let isNewScore = watt > personalRecords[key].score;
+        
+        if (isNewTime) personalRecords[key].time = timeDiff;
+        if (isNewScore) personalRecords[key].score = watt;
+        
+        localStorage.setItem('typingCircuitRecords', JSON.stringify(personalRecords));
+
+        let rank = ''; let rankClass = '';
+        if (missCount === 0) { rank = 'S'; rankClass = 'rank-S'; }
+        else if (missCount <= 3) { rank = 'A'; rankClass = 'rank-A'; }
+        else if (missCount <= 10) { rank = 'B'; rankClass = 'rank-B'; }
+        else { rank = 'C'; rankClass = 'rank-C'; }
+
+        japaneseElement.innerText = "🎉 全設備 通電完了！ 🎉";
+        romajiElement.innerHTML = `<span class="typed">SYSTEM ALL GREEN</span>`;
+        levelElement.innerText = "MISSION CLEAR";
+
+        keyboardElement.style.display = 'none'; 
+        resultScreen.style.display = 'block';
+        
+        document.getElementById('res-time').innerText = timeStr;
+        document.getElementById('res-watt').innerText = `${watt} W`;
+        document.getElementById('res-miss').innerText = `${missCount}回`;
+        
+        document.getElementById('badge-time').style.display = isNewTime
