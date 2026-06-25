@@ -129,7 +129,7 @@
 </script>
 
 <div id="start-overlay">
-    <button id="start-btn" onclick="document.getElementById('start-overlay').style.display='none'; initAudio();">
+    <button id="start-btn" onclick="document.getElementById('start-overlay').style.display='none'; triggerStart();">
         システム起動（クリックして開始）
     </button>
 </div>
@@ -239,7 +239,7 @@
         { 
             name: "Lv.5 専門用語（総合テスト）", 
             words: [
-                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "яゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" }, 
+                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "でんりゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" }, 
                 { ja: "コンセント", romaji: "KONSENTO" }, { ja: "トランジスタ", romaji: "TORANJISUTA" }, { ja: "コンデンサ", romaji: "KONDENSA" }, 
                 { ja: "オシロスコープ", romaji: "OSIROSUKO-PU" }, { ja: "はんだごて", romaji: "HANDAGOTE" }, { ja: "ケーブル", romaji: "KE-BURU" }, 
                 { ja: "アース", romaji: "A-SU" }, { ja: "ダイオード", romaji: "DAIO-DO" }, { ja: "インバーター", romaji: "INBA-TA-" }, 
@@ -335,14 +335,15 @@
         } catch(e){}
     }
 
-    // htmlのonclickから呼び出される音声初期化処理
-    function initAudio() {
+    // ボタンをクリックした際に確実に走る初期化関数
+    function triggerStart() {
         try { updateRecordDisplay(); } catch(e){}
         try { levelElement.innerText = "待機中: " + levels[startingLevelIndex].name; } catch(e){}
         try { 
             const AudioCtx = window.AudioContext || window.webkitAudioContext;
             if(AudioCtx) {
-                audioCtx = new AudioCtx(); if (audioCtx.state === 'suspended') audioCtx.resume();
+                audioCtx = new AudioCtx(); 
+                if (audioCtx.state === 'suspended') audioCtx.resume();
                 playSound('clear'); 
             }
         } catch(e) {}
@@ -359,4 +360,128 @@
     }
 
     function highlightNextKey() {
-        document.querySelectorAll('.key').
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        if (!isPlaying) { document.getElementById('key-ENTER').classList.add('active'); return; }
+        if (typedLength < currentRomaji.length) {
+            const nextChar = currentRomaji[typedLength];
+            const targetKey = document.getElementById('key-' + nextChar);
+            if (targetKey) targetKey.classList.add('active');
+        }
+    }
+
+    function loadWord() {
+        levelElement.innerText = `[${levels[startingLevelIndex].name}] 進行状況: ${currentWordIndex + 1} / ${currentQuestionList.length}`;
+        currentRomaji = currentQuestionList[currentWordIndex].romaji;
+        japaneseElement.innerText = currentQuestionList[currentWordIndex].ja;
+        typedLength = 0; updateDisplay(); highlightNextKey();
+    }
+
+    function nextWord() {
+        currentWordIndex++;
+        if (currentWordIndex >= currentQuestionList.length) { gameClear(); return; }
+        playSound('clear'); loadWord();
+    }
+
+    function gameClear() {
+        isPlaying = false;
+        document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+        
+        const timeDiff = Math.floor((Date.now() - startTime) / 1000);
+        const minutes = Math.floor(timeDiff / 60); const seconds = timeDiff % 60;
+        const timeStr = minutes > 0 ? `${minutes}分${seconds}秒` : `${seconds}秒`;
+
+        let key = 'lv' + startingLevelIndex;
+        if (!personalRecords[key]) personalRecords[key] = { time: Infinity, score: 0 };
+        
+        let isNewTime = timeDiff < personalRecords[key].time;
+        let isNewScore = watt > personalRecords[key].score;
+        
+        if (isNewTime) personalRecords[key].time = timeDiff;
+        if (isNewScore) personalRecords[key].score = watt;
+        
+        try { localStorage.setItem('typingCircuitRecords', JSON.stringify(personalRecords)); } catch(e){}
+
+        let rank = ''; let rankClass = '';
+        if (missCount === 0) { rank = 'S'; rankClass = 'rank-S'; }
+        else if (missCount <= 3) { rank = 'A'; rankClass = 'rank-A'; }
+        else if (missCount <= 10) { rank = 'B'; rankClass = 'rank-B'; }
+        else { rank = 'C'; rankClass = 'rank-C'; }
+
+        japaneseElement.innerText = "🎉 全設備 通電完了！ 🎉";
+        romajiElement.innerHTML = `<span class="typed">SYSTEM ALL GREEN</span>`;
+        levelElement.innerText = "MISSION CLEAR";
+
+        keyboardElement.style.display = 'none'; resultScreen.style.display = 'block';
+        document.getElementById('res-time').innerText = timeStr;
+        document.getElementById('res-watt').innerText = `${watt} W`;
+        document.getElementById('res-miss').innerText = `${missCount}回`;
+        
+        document.getElementById('badge-time').style.display = isNewTime ? 'inline-block' : 'none';
+        document.getElementById('badge-score').style.display = isNewScore ? 'inline-block' : 'none';
+        
+        const rankEl = document.getElementById('res-rank');
+        rankEl.innerText = rank; rankEl.className = `result-rank ${rankClass}`;
+        playSound('levelUp'); 
+    }
+
+    function updateDisplay() {
+        let typedPart = currentRomaji.substring(0, typedLength);
+        let untypedPart = currentRomaji.substring(typedLength);
+        romajiElement.innerHTML = `<span class="typed">${typedPart}</span><span class="untyped">${untypedPart}</span>`;
+    }
+
+    try { updateRecordDisplay(); } catch(e){}
+    highlightNextKey();
+
+    document.addEventListener('keydown', (e) => {
+        if (startOverlay.style.display !== 'none') return;
+        if (e.key === 'Shift' || e.key === 'Control' || e.key === 'Alt') return;
+
+        if (!isPlaying && resultScreen.style.display === 'block') {
+            if (e.key === 'Enter') {
+                resultScreen.style.display = 'none'; levelSelector.style.display = 'flex';
+                document.getElementById('record-display').style.display = 'flex'; keyboardElement.style.display = 'flex';
+                japaneseElement.innerText = "メインシステム起動準備";
+                romajiElement.innerHTML = `<span class="untyped">ENTERキーで開始</span>`;
+                levelElement.innerText = "待機中: " + levels[startingLevelIndex].name;
+                watt = 0; wattElement.innerText = watt; powerFillElement.style.width = '0%';
+                try { updateRecordDisplay(); } catch(err){}
+                highlightNextKey();
+            }
+            return;
+        }
+
+        if (!isPlaying) {
+            if (e.key === 'Enter') {
+                levelSelector.style.display = 'none'; document.getElementById('record-display').style.display = 'none'; 
+                isPlaying = true; 
+                let requiredCount = 10 + (startingLevelIndex * 3);
+                let allWords = [...levels[startingLevelIndex].words];
+                shuffleArray(allWords);
+                currentQuestionList = allWords.slice(0, Math.min(requiredCount, allWords.length));
+                currentWordIndex = 0; watt = 0; missCount = 0; startTime = Date.now(); 
+                wattElement.innerText = watt; powerFillElement.style.width = '0%';
+                loadWord();
+            }
+            return;
+        }
+
+        const key = e.key.toUpperCase();
+        if (!/^[A-Z\-]$/.test(key)) return;
+
+        if (key === currentRomaji[typedLength]) {
+            playSound('zap'); typedLength++; watt += 10; wattElement.innerText = watt;
+            powerFillElement.style.width = Math.min((watt / (currentQuestionList.length * 50)) * 100, 100) + '%';
+            updateDisplay(); highlightNextKey();
+            if (typedLength === currentRomaji.length) {
+                document.querySelectorAll('.key').forEach(k => k.classList.remove('active'));
+                setTimeout(nextWord, 300); 
+            }
+        } else {
+            missCount++; triggerErrorVisuals();
+            watt = Math.max(0, watt - 5); wattElement.innerText = watt;
+        }
+    });
+</script>
+</body>
+</html>
