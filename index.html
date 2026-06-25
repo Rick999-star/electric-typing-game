@@ -12,7 +12,7 @@
         
         #start-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(30, 30, 47, 0.95);
+            background: rgba(30, 30, 47, 0.98);
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             z-index: 1000;
         }
@@ -184,66 +184,75 @@
 </div>
 
 <script>
-    // --- 「ん」を「NN」に統一し、効率的入力に対応した最新辞書 ---
+    // --- 辞書データ ---
     const levels = [
         { 
             name: "Lv.1 母音（あいうえお）", 
             words: [
-                { ja: "あお (青)", romaji: "AO" }, { ja: "いい (良い)", romaji: "II" }, { ja: "うえ (上)", romaji: "UE" },
-                { ja: "えい (エイ)", romaji: "EI" }, { ja: "おい (甥)", romaji: "OI" }, { ja: "あい (愛)", romaji: "AI" },
-                { ja: "いう (言う)", romaji: "IU" }, { ja: "あう (会う)", romaji: "AU" }, { ja: "いえ (家)", romaji: "IE" },
+                { ja: "あお (青)", romaji: "AO" }, { ja: "いい (良い)", romaji: "II" }, { ja: "うえ (上)", romaji: "UE" }, 
+                { ja: "えい (エイ)", romaji: "EI" }, { ja: "おい (甥)", romaji: "OI" }, { ja: "あい (愛)", romaji: "AI" }, 
+                { ja: "いう (言う)", romaji: "IU" }, { ja: "あう (会う)", romaji: "AU" }, { ja: "いえ (家)", romaji: "IE" }, 
                 { ja: "おおい (多い)", romaji: "OOI" }
             ] 
         },
         { 
             name: "Lv.2 基本の子音（清音のみ）", 
             words: [
-                { ja: "かいろ (回路)", romaji: "KAIRO" }, { ja: "きかい (機械)", romaji: "KIKAI" }, { ja: "てこ (梃子)", romaji: "TEKO" },
-                { ja: "はこ (箱)", romaji: "HAKO" }, { ja: "さす (刺す)", romaji: "SASU" }, { ja: "まと (的)", romaji: "MATO" },
-                { ja: "くみ (組)", romaji: "KUMI" }, { ja: "ぬの (布)", romaji: "NUNO" }, { ja: "ほし (星)", romaji: "HOSI" },
-                { ja: "ゆき (雪)", romaji: "YUKI" }, { ja: "にく (肉)", romaji: "NIKU" }, { ja: "こと (事)", romaji: "KOTO" },
+                { ja: "かいろ (回路)", romaji: "KAIRO" }, { ja: "きかい (機械)", romaji: "KIKAI" }, { ja: "てこ (梃子)", romaji: "TEKO" }, 
+                { ja: "はこ (箱)", romaji: "HAKO" }, { ja: "さす (刺す)", romaji: "SASU" }, { ja: "まと (的)", romaji: "MATO" }, 
+                { ja: "くみ (組)", romaji: "KUMI" }, { ja: "ぬの (布)", romaji: "NUNO" }, { ja: "ほし (星)", romaji: "HOSI" }, 
+                { ja: "ゆき (雪)", romaji: "YUKI" }, { ja: "にく (肉)", romaji: "NIKU" }, { ja: "こと (事)", romaji: "KOTO" }, 
                 { ja: "いと (糸)", romaji: "ITO" }
             ] 
         },
         { 
             name: "Lv.3 濁音・半濁音（点々・丸）", 
             words: [
-                { ja: "でんき (電気)", romaji: "DENNKI" }, { ja: "どう (銅)", romaji: "DOU" }, { ja: "ばね (発条)", romaji: "BANE" },
-                { ja: "ぶひん (部品)", romaji: "BUHINN" }, { ja: "ボタン", romaji: "BOTANN" }, { ja: "パソコン", romaji: "PASOKONN" },
-                { ja: "じしゃく (磁石)", romaji: "JISYAKU" }, { ja: "ぎん (銀)", romaji: "GINN" }, { ja: "ぜんまい", romaji: "ZENMAI" },
-                { ja: "でんたく (電卓)", romaji: "DENNTAKU" }, { ja: "まど (窓)", romaji: "MADO" }, { ja: "でんわ (電話)", romaji: "DENNWA" },
-                { ja: "じかん (時間)", romaji: "ZIKANN" }, { ja: "びじゅつ (美術)", romaji: "BIZYUTU" }, { ja: "だくおん (濁音)", romaji: "DAKUONN" },
+                { ja: "でんき (電気)", romaji: "DENNKI" }, { ja: "どう (銅)", romaji: "DOU" }, { ja: "ばね (発条)", romaji: "BANE" }, 
+                { ja: "ぶひん (部品)", romaji: "BUHINN" }, { ja: "ボタン", romaji: "BOTANN" }, { ja: "パソコン", romaji: "PASOKONN" }, 
+                { ja: "じしゃく (磁石)", romaji: "JISYAKU" }, { ja: "ぎん (銀)", romaji: "GINN" }, { ja: "ぜんまい", romaji: "ZENMAI" }, 
+                { ja: "でんたく (電卓)", romaji: "DENNTAKU" }, { ja: "まど (窓)", romaji: "MADO" }, { ja: "でんわ (電話)", romaji: "DENNWA" }, 
+                { ja: "じかん (時間)", romaji: "ZIKANN" }, { ja: "びじゅつ (美術)", romaji: "BIZYUTU" }, { ja: "だくおん (濁音)", romaji: "DAKUONN" }, 
                 { ja: "じどう (自動)", romaji: "ZIDOU" }
-        ] 
+            ] 
         },
         { 
             name: "Lv.4 促音・長音（小さい文字・伸ばし棒）", 
             words: [
-                { ja: "ワット", romaji: "WATTO" }, { ja: "ニッパー", romaji: "NIPPA-" }, { ja: "スイッチ", romaji: "SUITTI" },
-                { ja: "ショート", romaji: "SYO-TO" }, { ja: "ヒューズ", romaji: "HYU-ZU" }, { ja: "ソケット", romaji: "SOKETTO" },
-                { ja: "オーム", romaji: "O-MU" }, { ja: "ジャック", romaji: "JAKKU" }, { ja: "ブレーカー", romaji: "BURE-KA-" },
-                { ja: "テスター", romaji: "TESUTA-" }, { ja: "バッテリー", romaji: "BATTERI-" }, { ja: "モーター", romaji: "MO-TA-" },
-                { ja: "ローター", romaji: "RO-TA-" }, { ja: "リレー", romaji: "RIRE-" }, { ja: "センサー", romaji: "SENSA-" },
-                { ja: "ペーパー", romaji: "PE-PA-" }, { ja: "パーツ", romaji: "PA-TU" }, { ja: "ルーター", romaji: "RU-TA-" },
+                { ja: "ワット", romaji: "WATTO" }, { ja: "ニッパー", romaji: "NIPPA-" }, { ja: "スイッチ", romaji: "SUITTI" }, 
+                { ja: "ショート", romaji: "SYO-TO" }, { ja: "ヒューズ", romaji: "HYU-ZU" }, { ja: "ソケット", romaji: "SOKETTO" }, 
+                { ja: "オーム", romaji: "O-MU" }, { ja: "ジャック", romaji: "JAKKU" }, { ja: "ブレーカー", romaji: "BURE-KA-" }, 
+                { ja: "テスター", romaji: "TESUTA-" }, { ja: "バッテリー", romaji: "BATTERI-" }, { ja: "モーター", romaji: "MO-TA-" }, 
+                { ja: "ローター", romaji: "RO-TA-" }, { ja: "リレー", romaji: "RIRE-" }, { ja: "センサー", romaji: "SENSA-" }, 
+                { ja: "ペーパー", romaji: "PE-PA-" }, { ja: "パーツ", romaji: "PA-TU" }, { ja: "ルーター", romaji: "RU-TA-" }, 
                 { ja: "スターター", romaji: "SUTA-TA-" }
             ] 
         },
         { 
             name: "Lv.5 専門用語（総合テスト）", 
             words: [
-                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "でんりゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" },
-                { ja: "コンセント", romaji: "KONSENTO" }, { ja: "トランジスタ", romaji: "TORANJISUTA" }, { ja: "コンデンサ", romaji: "KONDENSA" },
-                { ja: "オシロスコープ", romaji: "OSIROSUKO-PU" }, { ja: "はんだごて", romaji: "HANDAGOTE" }, { ja: "ケーブル", romaji: "KE-BURU" },
-                { ja: "アース", romaji: "A-SU" }, { ja: "ダイオード", romaji: "DAIO-DO" }, { ja: "インバーター", romaji: "INBA-TA-" },
-                { ja: "はいせん (配線)", romaji: "HAISENN" }, { ja: "ドリル", romaji: "DORIRU" }, { ja: "ドライバー", romaji: "DORAIBA-" },
-                { ja: "プラグ", romaji: "PURAGU" }, { ja: "マイクロホン", romaji: "MAIKUROHONN" }, { ja: "でんじべん (電磁弁)", romaji: "DENZIBENN" },
-                { ja: "かでんりゅう (過電流)", romaji: "KADENNRYUU" }, { ja: "ターミナル", romaji: "TA-MINARU" }, { ja: "しんどう (振動)", romaji: "SINNDOU" },
+                { ja: "でんあつ (電圧)", romaji: "DENNATU" }, { ja: "でんりゅう (電流)", romaji: "DENNRYUU" }, { ja: "ていこう (抵抗)", romaji: "TEIKOU" }, 
+                { ja: "コンセント", romaji: "KONSENTO" }, { ja: "トランジスタ", romaji: "TORANJISUTA" }, { ja: "コンデンサ", romaji: "KONDENSA" }, 
+                { ja: "オシロスコープ", romaji: "OSIROSUKO-PU" }, { ja: "はんだごて", romaji: "HANDAGOTE" }, { ja: "ケーブル", romaji: "KE-BURU" }, 
+                { ja: "アース", romaji: "A-SU" }, { ja: "ダイオード", romaji: "DAIO-DO" }, { ja: "インバーター", romaji: "INBA-TA-" }, 
+                { ja: "はいせん (配線)", romaji: "HAISENN" }, { ja: "ドリル", romaji: "DORIRU" }, { ja: "ドライバー", romaji: "DORAIBA-" }, 
+                { ja: "プラグ", romaji: "PURAGU" }, { ja: "マイクロホン", romaji: "MAIKUROHONN" }, { ja: "でんじべん (電磁弁)", romaji: "DENZIBENN" }, 
+                { ja: "かでんりゅう (過電流)", romaji: "KADENNRYUU" }, { ja: "ターミナル", romaji: "TA-MINARU" }, { ja: "しんどう (振動)", romaji: "SINNDOU" }, 
                 { ja: "テンション", romaji: "TENSYONN" }
             ] 
         }
     ];
 
-    let personalRecords = JSON.parse(localStorage.getItem('typingCircuitRecords')) || {};
+    // ★安全装置付きでセーブデータを読み込む
+    let personalRecords = {};
+    try {
+        const savedData = localStorage.getItem('typingCircuitRecords');
+        if (savedData) {
+            personalRecords = JSON.parse(savedData);
+        }
+    } catch (e) {
+        console.warn("セーブ機能が制限されています（このまま遊べます）");
+    }
 
     let startingLevelIndex = 0; 
     let currentQuestionList = []; 
@@ -332,9 +341,17 @@
         }
     }
 
+    // ★安全装置付きで音声を起動
     startBtn.addEventListener('click', () => {
-        try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); playSound('clear'); } 
-        catch(e) { console.warn("Audio Context Error", e); }
+        try { 
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            if(AudioContext) {
+                audioCtx = new AudioContext(); 
+                playSound('clear'); 
+            }
+        } 
+        catch(e) { console.warn("音声出力が制限されています", e); }
+        
         startOverlay.style.display = 'none';
         updateRecordDisplay(); 
         levelElement.innerText = "待機中: " + levels[startingLevelIndex].name;
@@ -395,7 +412,12 @@
         if (isNewTime) personalRecords[key].time = timeDiff;
         if (isNewScore) personalRecords[key].score = watt;
         
-        localStorage.setItem('typingCircuitRecords', JSON.stringify(personalRecords));
+        // ★安全装置付きでセーブデータを保存
+        try {
+            localStorage.setItem('typingCircuitRecords', JSON.stringify(personalRecords));
+        } catch(e) {
+            console.warn("セーブ機能が制限されています（このまま遊べます）");
+        }
 
         let rank = ''; let rankClass = '';
         if (missCount === 0) { rank = 'S'; rankClass = 'rank-S'; }
@@ -407,12 +429,4 @@
         romajiElement.innerHTML = `<span class="typed">SYSTEM ALL GREEN</span>`;
         levelElement.innerText = "MISSION CLEAR";
 
-        keyboardElement.style.display = 'none'; 
-        resultScreen.style.display = 'block';
-        
-        document.getElementById('res-time').innerText = timeStr;
-        document.getElementById('res-watt').innerText = `${watt} W`;
-        document.getElementById('res-miss').innerText = `${missCount}回`;
-        
-        document.getElementById('badge-time').style.display = isNewTime
-
+        keyboardElement.style.display = '
